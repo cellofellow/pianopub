@@ -2,7 +2,6 @@ package data
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -34,20 +33,20 @@ func (u *User) Authenticate(password string) bool {
 	return u.HashedPassword == CheckPassword(password, u.Salt)
 }
 
-func (u *User) IncrementRep() *User {
+func (u *User) IncrementRep() error {
 	_, err := u.dbmap.Exec(`UPDATE user SET rep = rep + 1 WHERE email = ?`, u.Email)
-	if err != nil {
+	if err == nil {
 		u.Rep++
 	}
-	return u
+	return err
 }
 
-func (u *User) DecrementRep() *User {
+func (u *User) DecrementRep() error {
 	_, err := u.dbmap.Exec(`UPDATE user SET rep = rep - 1 WHERE email = ?`, u.Email)
-	if err != nil {
+	if err == nil {
 		u.Rep--
 	}
-	return u
+	return err
 }
 
 func (u *User) ChangePassword(password string) error {
@@ -122,18 +121,4 @@ func (d *Database) GetUser(email string) (*User, error) {
 	}
 	user.dbmap = d.dbmap
 	return &user, nil
-}
-
-func (d *Database) GetUserId(id uint32) (*User, error) {
-	i, err := d.dbmap.Get(User{}, id)
-	if err != nil {
-		return nil, err
-	}
-	if user, ok := i.(User); ok {
-		user.dbmap = d.dbmap
-		return &user, nil
-	} else {
-		return nil, errors.New("gorp did not return a User instance")
-	}
-	panic("unreachable")
 }

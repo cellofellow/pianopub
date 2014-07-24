@@ -1,6 +1,8 @@
 package data
 
 import "testing"
+import "strings"
+import "fmt"
 
 const (
 	email = "test@test.email"
@@ -14,10 +16,12 @@ func TestNewDatabase(t *testing.T) {
 	db, err := NewDatabase(":memory:")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	users, err := db.dbmap.Select(User{}, `SELECT * FROM user`)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if len(users) > 0 {
 		t.Error("Shouldn't have any users, we didn't create one.")
@@ -28,13 +32,68 @@ func TestAddUser(t *testing.T) {
 	db, err := NewDatabase(":memory:")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	user, err := db.AddUser(email, name, nick, password)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if !(user.Email == email && user.Name == name && user.Nick == nick) {
 		t.Error("Database did not save identical data.")
+	}
+}
+
+func TestAddUserUniqueConflict(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = db.AddUser("another@test.email", "New Name", "tester", wrongpassword)
+	if err == nil {
+		t.Error("Should have returned a Unique on User.Nick error.")
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	userMade, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	userGot, err := db.GetUser(email)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if *userMade != *userGot {
+		t.Error("Users are not the same.")
+	}
+}
+
+func TestGetNonExistantUser(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = db.GetUser("tester2@test.email")
+	if err == nil {
+		t.Error("Selected a user that doesn't exist.")
 	}
 }
 
@@ -42,10 +101,12 @@ func TestAuthUser(t *testing.T) {
 	db, err := NewDatabase(":memory:")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	user, err := db.AddUser(email, name, nick, password)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if !(user.Authenticate(password)) {
 		t.Error("Did not authenticate with correct password.")
@@ -56,13 +117,105 @@ func TestNoAuthUser(t *testing.T) {
 	db, err := NewDatabase(":memory:")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	user, err := db.AddUser(email, name, nick, password)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if user.Authenticate(wrongpassword) {
 		t.Error("Authenticated with incorrect password.")
+	}
+}
+
+func TestUserChangePassword(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	user, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = user.ChangePassword(wrongpassword)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if !user.Authenticate(wrongpassword) {
+		t.Error("Password not successfully changed.")
+	}
+}
+
+func TestUserString(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	user, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if strings.Index(fmt.Sprintln(user), "⟨User »") != 0 {
+		t.Error("String of user does not begin properly.")
+	}
+}
+
+func TestUserIncrementRep(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	user, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = user.IncrementRep()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if user.Rep != 1 {
+		t.Error("Rep not successfully incremented.")
+	}
+}
+
+func TestUserDecrementRep(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	user, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	user.IncrementRep()
+	user.IncrementRep()
+	user.IncrementRep()
+	err = user.DecrementRep()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if user.Rep != 2 {
+		t.Log(user.Rep)
+		t.Error("Rep not successfully decremented.")
 	}
 }
 
