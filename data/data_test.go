@@ -152,6 +152,29 @@ func TestUserChangePassword(t *testing.T) {
 	}
 }
 
+func TestUserSetAdmin(t *testing.T) {
+	db, err := NewDatabase(":memory:")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	user, err := db.AddUser(email, name, nick, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = user.SetAdmin(true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if !user.Admin {
+		t.Error("User is not admin.")
+	}
+}
+
 func TestUserString(t *testing.T) {
 	db, err := NewDatabase(":memory:")
 	if err != nil {

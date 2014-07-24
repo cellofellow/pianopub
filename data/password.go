@@ -3,6 +3,7 @@ package data
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 
 	"code.google.com/p/go.crypto/pbkdf2"
 )
@@ -21,10 +22,20 @@ func HashPassword(password string) HashedPassword {
 		panic(err.Error())
 	}
 	hash := pbkdf2.Key([]byte(password), salt, 8192, 32, sha256.New)
-	return HashedPassword{Salt: string(salt), Hash: string(hash)}
+	return HashedPassword{
+		Salt: base64.StdEncoding.EncodeToString(salt),
+		Hash: base64.StdEncoding.EncodeToString(hash),
+	}
 }
 
 func CheckPassword(password, salt string) HashedPassword {
-	hash := pbkdf2.Key([]byte(password), []byte(salt), 8192, 32, sha256.New)
-	return HashedPassword{Salt: salt, Hash: string(hash)}
+	s, err := base64.StdEncoding.DecodeString(salt)
+	if err != nil {
+		return HashedPassword{}
+	}
+	hash := pbkdf2.Key([]byte(password), s, 8192, 32, sha256.New)
+	return HashedPassword{
+		Salt: salt,
+		Hash: base64.StdEncoding.EncodeToString(hash),
+	}
 }
