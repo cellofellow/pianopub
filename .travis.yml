@@ -3,3 +3,6 @@ language: go
 go:
   - 1.3
 script: go test data
+notifications:
+  webhooks:
+    - https://izeni.slack.com/services/hooks/incoming-webhook?token=87qmTiwVYcx54ytv7Ro4oCDv
