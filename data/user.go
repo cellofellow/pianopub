@@ -26,6 +26,37 @@ func (u *User) String() string {
 	)
 }
 
+func (u User) ddl(dbmap *gorp.DbMap) error {
+	table := dbmap.AddTableWithName(User{}, "user")
+	table.SetKeys(false, "Email")
+	table.ColMap("Email").SetNotNull(true)
+	table.ColMap("Name").SetNotNull(true)
+	table.ColMap("Nick").SetNotNull(true).SetUnique(true)
+	table.ColMap("Salt").SetNotNull(true)
+	table.ColMap("Hash").SetNotNull(true)
+	table.ColMap("Rep").SetNotNull(true)
+	table.ColMap("Admin").SetNotNull(true)
+
+	_, err := dbmap.Exec(`
+		CREATE TABLE IF NOT EXISTS user (
+			Email TEXT NOT NULL PRIMARY KEY,
+			Name  TEXT NOT NULL,
+			Nick  TEXT NOT NULL UNIQUE CHECK (Nick NOT LIKE '% %'),
+			Salt  TEXT NOT NULL CHECK (length(Salt) = 16),
+			Hash  TEXT NOT NULL CHECK (length(Hash) = 44),
+			Rep   INTEGER NOT NULL CHECK (Rep >= 0),
+			Admin INTEGER NOT NULL CHECK (Admin in (0,1))
+		)
+	`)
+
+	return err
+}
+
+func (u *User) Update() (err error) {
+	_, err = u.dbmap.Update(u)
+	return
+}
+
 func (u *User) Authenticate(password string) bool {
 	return u.HashedPassword == CheckPassword(password, u.Salt)
 }
