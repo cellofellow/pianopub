@@ -9,8 +9,8 @@ import (
 )
 
 type HashedPassword struct {
-	Salt string
-	Hash string
+	Salt string `json:"-"`
+	Hash string `json:"-"`
 }
 
 func HashPassword(password string) HashedPassword {

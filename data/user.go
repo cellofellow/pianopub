@@ -1,18 +1,24 @@
 package data
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
+	"log"
+	"os"
+	"regexp"
+	"strings"
 
 	"github.com/coopernurse/gorp"
 )
 
 type User struct {
-	Email string
-	Name  string
-	Nick  string
+	Email string      `json:"email"`
+	Name  string      `json:"name"`
+	Nick  string      `json:"nick"`
 	HashedPassword
-	Rep   uint32
-	Admin bool
+	Rep   uint32      `json:"rep"`
+	Admin bool        `json:"admin"`
 	dbmap *gorp.DbMap `db:"-"`
 }
 
@@ -108,12 +114,82 @@ func (d *Database) AddUser(email, name, nick, password string) (*User, error) {
 	return user, nil
 }
 
+var nowhitespace = regexp.MustCompile(`^\S$`)
+
+func (d *Database) AddFirstUser() bool {
+	var email, name, nick, password string
+	var user *User
+
+	exists, err := d.dbmap.SelectInt(`SELECT EXISTS (SELECT email FROM user WHERE admin = 1)`)
+	if exists == 1 || err != nil {
+		return true
+	}
+
+	fmt.Println("There are no users. At least one admin user is required.")
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("Email Address: ")
+	email, err = reader.ReadString('\n')
+	if err != nil {
+		goto fail
+	}
+	email = strings.TrimSpace(email)
+	if !strings.Contains(email, "a") {
+		log.Println("Email should have an \"@\"")
+		return false
+	}
+
+	fmt.Printf("Name: ")
+	name, err = reader.ReadString('\n')
+	if err != nil {
+		goto fail
+	}
+	name = strings.TrimSpace(name)
+
+	fmt.Printf("Nick: ")
+	nick, err = reader.ReadString('\n')
+	if err != nil {
+		goto fail
+	}
+	nick = strings.TrimSpace(nick)
+	if nowhitespace.Match([]byte(nick)) {
+		log.Println("Nick should be 1 word.")
+		return false
+	}
+
+	fmt.Printf("Password: ")
+	password, err = reader.ReadString('\n')
+	if err != nil {
+		goto fail
+	}
+	password = strings.TrimSpace(password)
+
+	user, err = d.AddUser(email, name, nick, password)
+	if err != nil {
+		goto fail
+	}
+	err = user.SetAdmin(true)
+	if err != nil {
+		goto fail
+	}
+
+	return true
+
+	fail:
+		log.Println(err)
+		return false
+}
+
 func (d *Database) GetUser(email string) (*User, error) {
-	var user User
-	err := d.dbmap.SelectOne(&user, `SELECT * FROM user WHERE email = ?`, email)
+	var user *User
+	u, err := d.dbmap.Get(user, email)
 	if err != nil {
 		return nil, err
 	}
+	if u == nil {
+		return nil, errors.New("No user with email " + email)
+	}
+	user = u.(*User)
 	user.dbmap = d.dbmap
-	return &user, nil
+	return user, nil
 }

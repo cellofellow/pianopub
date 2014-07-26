@@ -6,6 +6,8 @@ import (
 	"github.com/cellofellow/gopiano"
 )
 
+const CONFIGKEY = "pandora"
+
 type Pandora struct {
 	client   *gopiano.Client
 	config   map[string]string

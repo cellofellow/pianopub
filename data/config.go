@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Key       string                 `db:"key"`
 	JSONField string                 `db:"json"`
-	JSON      map[string]interface{} `db:"-"`
+	JSON      map[string]string      `db:"-"`
 	dbmap     *gorp.DbMap            `db:"-"`
 }
 
@@ -30,12 +30,7 @@ func (c Config) ddl(dbmap *gorp.DbMap) error {
 	return err
 }
 
-func (c *Config) Update() (err error) {
-	_, err = c.dbmap.Update(c)
-	return
-}
-
-func (d *Database) AddConfig(key string, config map[string]interface{}) (*Config, error) {
+func (d *Database) AddConfig(key string, config map[string]string) (*Config, error) {
 	jsonBytes, err := json.Marshal(config)
 	if err != nil {
 		return nil, err
@@ -65,7 +60,7 @@ func (d *Database) GetConfig(key string) (*Config, error) {
 	return &c, nil
 }
 
-func (c *Config) UpdateJSON(config map[string]interface{}) error {
+func (c *Config) UpdateJSON(config map[string]string) error {
 	jsonBytes, err := json.Marshal(config)
 	if err != nil {
 		return err
