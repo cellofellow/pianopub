@@ -134,7 +134,7 @@ func (d *Database) AddFirstUser() bool {
 		goto fail
 	}
 	email = strings.TrimSpace(email)
-	if !strings.Contains(email, "a") {
+	if !strings.Contains(email, "@") {
 		log.Println("Email should have an \"@\"")
 		return false
 	}

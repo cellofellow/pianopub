@@ -12,7 +12,7 @@ type login struct {
 	db              *data.Database
 }
 
-func newlogin (db *data.Database) *login {
+func newlogin(db *data.Database) *login {
 	return &login{
 		clientsLoggedIn: make(map[string]*data.User),
 		db:              db,
@@ -22,47 +22,41 @@ func newlogin (db *data.Database) *login {
 func (l *login) HandleRPC(clientID string, topicURI string, args ...interface{}) (interface{}, error) {
 	var email, password string
 	var err error
-	var ok bool
 
-	log.Printf("rpc: %s, %s, %v", clientID, topicURI)
+	log.Printf("rpc: %s, %s", clientID, topicURI)
 
 	if len(args) != 2 {
 		return nil, turnpike.RPCError{
-			URI: topicURI,
+			URI:         topicURI,
 			Description: "Invalid Call",
-			Details: "Incorrect number of arguments. Must have 2: username and password.",
+			Details:     "Incorrect number of arguments. Must have 2: email and password.",
 		}
 	}
-	if email, ok = args[0].(string); !ok {
-		return nil, turnpike.RPCError{
-			URI: topicURI,
-			Description: "Invalid Call",
-			Details: "Email must be a string.",
-		}
 
+	email, err = argToString(args[0], topicURI, "Email")
+	if err != nil {
+		return nil, err
 	}
-	if password, ok = args[1].(string); !ok {
-		return nil, turnpike.RPCError{
-			URI: topicURI,
-			Description: "Invalid Call",
-			Details: "Password must be a string.",
-		}
+
+	password, err = argToString(args[1], topicURI, "Password")
+	if err != nil {
+		return nil, err
 	}
 
 	user, err := l.db.GetUser(email)
 	if err != nil {
 		return nil, turnpike.RPCError{
-			URI: topicURI,
+			URI:         topicURI,
 			Description: "Login Failed",
-			Details: "Invalid email or password",
+			Details:     "Invalid email or password",
 		}
 	}
 
 	if user.HashedPassword != data.CheckPassword(password, user.Salt) {
 		return nil, turnpike.RPCError{
-			URI: topicURI,
+			URI:         topicURI,
 			Description: "Login Failed",
-			Details: "Invalid email or password",
+			Details:     "Invalid email or password",
 		}
 	}
 

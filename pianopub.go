@@ -20,7 +20,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-
 	if !db.AddFirstUser() {
 		log.Fatal("No admin user added.")
 	}

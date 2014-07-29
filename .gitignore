@@ -1,3 +1,6 @@
 pianopub
 *.swp
 *.swo
+*~
+*.sqlite3
+*.sqlite
