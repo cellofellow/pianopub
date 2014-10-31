@@ -2,20 +2,20 @@ package ws
 
 import (
 	"github.com/cellofellow/pianopub/data"
-	"github.com/mattbaird/turnpike"
+	"gopkg.in/jcelliott/turnpike.v1"
 )
 
 var server *turnpike.Server
 
 func Server(db *data.Database) *turnpike.Server {
-	s := turnpike.NewServer(false)
+	s := turnpike.NewServer()
 	server = s
 
-	l := newlogin(db)
-	s.RegisterRPCFunc("rpc:login", l)
-	
-	sp := newsignup(db)
-	s.RegisterRPCFunc("rpc:signup", sp)
+	l := newLogin(db, s)
+	s.RegisterRPC("rpc:login", l.HandleRPC)
+
+	sp := newSignup(db)
+	s.RegisterRPC("rpc:signup", sp.HandleRPC)
 	return s
 
 }

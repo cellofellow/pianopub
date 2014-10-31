@@ -2,18 +2,19 @@ package ws
 
 import (
 	"log"
+	"net/mail"
 	"regexp"
 	"strings"
 
 	"github.com/cellofellow/pianopub/data"
-	"github.com/mattbaird/turnpike"
+	"gopkg.in/jcelliott/turnpike.v1"
 )
 
 type signup struct {
-	db *data.Database
+	*data.Database
 }
 
-func newsignup(db *data.Database) *signup {
+func newSignup(db *data.Database) *signup {
 	return &signup{db}
 }
 
@@ -58,13 +59,16 @@ func (s *signup) HandleRPC(clientID string, topicURI string, args ...interface{}
 	nick = strings.TrimSpace(nick)
 	password = strings.TrimSpace(password)
 
-	if !strings.Contains(email, "@") {
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
 		return nil, turnpike.RPCError{
 			URI:         topicURI,
 			Description: "Invalid Data",
-			Details:     "Email should have an \"@\"",
+			Details:     "Email error: " + err.Error(),
 		}
 	}
+
+	email = addr.Address
 
 	if nowhitespace.Match([]byte(nick)) {
 		return nil, turnpike.RPCError{
@@ -74,10 +78,9 @@ func (s *signup) HandleRPC(clientID string, topicURI string, args ...interface{}
 		}
 	}
 
-	user, err := s.db.AddUser(email, name, nick, password)
+	user, err := s.AddUser(email, name, nick, password)
 	if err != nil {
 		return nil, err
 	}
-
 	return user, nil
 }
