@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/cellofellow/pianopub/data"
+	"github.com/cellofellow/pianopub/web"
 	"github.com/cellofellow/pianopub/ws"
 )
 
@@ -25,8 +26,9 @@ func main() {
 	}
 
 	s := ws.Server(db)
+	r := web.Router(db)
 	http.Handle("/ws", s.Handler)
-	http.Handle("/", http.FileServer(http.Dir("http")))
+	http.Handle("/", r)
 	log.Println("Listening at", listen)
 	err = http.ListenAndServe(listen, nil)
 	if err != nil {

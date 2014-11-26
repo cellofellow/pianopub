@@ -1,44 +1,35 @@
 package pandora
 
 import (
-	"errors"
-
 	"github.com/cellofellow/gopiano"
 )
 
-const CONFIGKEY = "pandora"
-
 type Pandora struct {
-	client   *gopiano.Client
-	config   map[string]string
-	Stations Stations
+	client             *gopiano.Client
+	username, password string
+	Stations           Stations
 }
 
-func NewPandora(config map[string]string) (*Pandora, error) {
+func NewPandora(username, password string) (*Pandora, error) {
 	var err error
 	client, err := gopiano.NewClient(gopiano.AndroidClient)
 	if err != nil {
 		return nil, err
-	}
-	if _, ok := config["username"]; !ok {
-		return nil, errors.New("username not in config")
-	}
-	if _, ok := config["password"]; !ok {
-		return nil, errors.New("password not in config")
 	}
 	_, err = client.AuthPartnerLogin()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = client.AuthUserLogin(config["username"], config["password"])
+	_, err = client.AuthUserLogin(username, password)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Pandora{
-		client: client,
-		config: config,
+		client:   client,
+		username: username,
+		password: password,
 	}, nil
 }
 

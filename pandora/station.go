@@ -35,6 +35,8 @@ func (s *Station) Playlist() (Playlist, error) {
 
 type Stations []Station
 
+// Sort interface methods.
+
 func (s Stations) Len() int {
 	return len(s)
 }
